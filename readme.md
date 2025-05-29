@@ -120,7 +120,7 @@ MathBatch provides these abstract base classes for customization:
    - `BaseDataSaver`: Output formatting and saving
 
 2. **Model Integration**:
-   - `BaseInferenceModel`: Interface for custom LLMs
+   - `BaseInferenceModel`: Interface for custom MLMs
 
 ## Project Structure
 
