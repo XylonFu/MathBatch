@@ -133,6 +133,8 @@ class VLLMInferenceModel(BaseInferenceModel):
                 for prompt, image in zip(prompts, images)
             ]
 
+            print(f"First request: {requests[0]}")
+
             # Generate responses
             outputs = self.llm.generate(
                 requests,
