@@ -1,15 +1,15 @@
-# data_processing/batch_processor.py
+# cores/batcher.py
 import logging
 from typing import List, Dict, Any
 
-from models.base_model import BaseInferenceModel
-from .base_processor import BaseBatchProcessor, BaseDataProcessor
+from models.base import BaseInferenceModel
+from .base import BaseDataBatcher, BaseDataProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class BatchProcessor(BaseBatchProcessor):
-    """Concrete implementation of batch processor"""
+class DataBatcher(BaseDataBatcher):
+    """Concrete implementation of data batcher"""
 
     def __init__(self, model: BaseInferenceModel, batch_size: int = 500):
         self.model = model

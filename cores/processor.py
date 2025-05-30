@@ -1,11 +1,11 @@
-# data_processing/data_processor.py
+# cores/processor.py
 import logging
 import os
 from typing import List, Dict, Any
 
 from PIL import Image
 
-from .base_processor import BaseDataProcessor
+from .base import BaseDataProcessor
 
 logger = logging.getLogger(__name__)
 

@@ -4,13 +4,13 @@ import logging
 
 from vllm import LLM, SamplingParams
 
-from data_processing.batch_processor import BatchProcessor
-from data_processing.data_filter import DataFilter
-from data_processing.data_loader import DataLoader
-from data_processing.data_processor import MultimodalDataProcessor, TextOnlyDataProcessor
-from data_processing.data_saver import DataSaver
-from data_processing.pipeline_executor import PipelineExecutor
-from models.vllm_model import VLLMInferenceModel
+from cores.batcher import DataBatcher
+from cores.executor import PipelineExecutor
+from cores.filter import DataFilter
+from cores.loader import DataLoader
+from cores.processor import MultimodalDataProcessor, TextOnlyDataProcessor
+from cores.saver import DataSaver
+from models.vllm import VLLMInferenceModel
 
 # Configure logging
 logging.basicConfig(
@@ -117,7 +117,7 @@ def main():
     # Create shared components
     data_loader = DataLoader(args.index_field, args.response_field)
     data_filter = DataFilter(args.response_field, args.rerun)
-    batch_processor = BatchProcessor(inference_model, args.batch_size)
+    batch_processor = DataBatcher(inference_model, args.batch_size)
 
     # Process multimodal dataset
     if args.multimodal_input:

@@ -1,26 +1,9 @@
-# data_processing/base_processor.py
+# cores/base.py
 import logging
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
-
-
-class BaseDataProcessor(ABC):
-    """Abstract base class for data processors"""
-
-    def __init__(self, query_field: str):
-        self.query_field = query_field
-
-    @abstractmethod
-    def process_item(self, item: Dict[str, Any]) -> Dict[str, Any]:
-        """Processes a single data item"""
-        pass
-
-    @abstractmethod
-    def process_batch(self, batch: List[Dict[str, Any]]) -> Dict[str, List]:
-        """Processes a batch of data items"""
-        pass
 
 
 class BaseDataLoader(ABC):
@@ -54,8 +37,25 @@ class BaseDataFilter(ABC):
         pass
 
 
-class BaseBatchProcessor(ABC):
-    """Abstract base class for batch processors"""
+class BaseDataProcessor(ABC):
+    """Abstract base class for data processors"""
+
+    def __init__(self, field_name: str):
+        self.field_name = field_name
+
+    @abstractmethod
+    def process_item(self, item: Dict[str, Any]) -> Dict[str, Any]:
+        """Processes a single data item"""
+        pass
+
+    @abstractmethod
+    def process_batch(self, batch: List[Dict[str, Any]]) -> Dict[str, List]:
+        """Processes a batch of data items"""
+        pass
+
+
+class BaseDataBatcher(ABC):
+    """Abstract base class for data batchers"""
 
     @abstractmethod
     def process_batches(

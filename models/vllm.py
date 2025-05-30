@@ -1,4 +1,4 @@
-# models/vllm_model.py
+# models/vllm.py
 import base64
 import logging
 from io import BytesIO
@@ -6,9 +6,9 @@ from typing import List, Optional, Union, Dict
 
 from PIL import Image
 from transformers import AutoTokenizer
-from vllm import LLM, SamplingParams
 
-from .base_model import BaseInferenceModel
+from vllm import LLM, SamplingParams
+from .base import BaseInferenceModel
 
 logger = logging.getLogger(__name__)
 

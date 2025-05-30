@@ -1,10 +1,10 @@
-# data_processing/data_loader.py
+# cores/loader.py
 import json
 import logging
 import os
 from typing import List, Dict, Any
 
-from .base_processor import BaseDataLoader
+from .base import BaseDataLoader
 
 logger = logging.getLogger(__name__)
 

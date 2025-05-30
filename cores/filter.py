@@ -1,8 +1,8 @@
-# data_processing/data_filter.py
+# cores/filter.py
 import logging
 from typing import List, Dict, Any
 
-from .base_processor import BaseDataFilter
+from .base import BaseDataFilter
 
 logger = logging.getLogger(__name__)
 

@@ -1,12 +1,12 @@
-# data_processing/pipeline_executor.py
+# cores/executor.py
 import logging
 import os
 
-from .base_processor import (
+from .base import (
     BaseDataLoader,
-    BaseDataProcessor,
     BaseDataFilter,
-    BaseBatchProcessor,
+    BaseDataProcessor,
+    BaseDataBatcher,
     BaseDataSaver
 )
 
@@ -21,7 +21,7 @@ class PipelineExecutor:
             data_loader: BaseDataLoader,
             data_processor: BaseDataProcessor,
             data_filter: BaseDataFilter,
-            batch_processor: BaseBatchProcessor,
+            batch_processor: BaseDataBatcher,
             data_saver: BaseDataSaver
     ):
         self.data_loader = data_loader
