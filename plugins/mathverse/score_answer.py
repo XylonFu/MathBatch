@@ -119,23 +119,23 @@ def main():
     # Create shared components
     data_loader = DataLoader(args.index_field, args.response_field)
     data_filter = DataFilter(args.response_field, args.rerun)
-    extract_preprocessor = ScoreAnswerPreProcessor(args.query_field,
-                                                   args.question_field, args.answer_field,
-                                                   demo_prompt_score)
-    clean_postprocessor = CleanJudgeTagPostProcessor(args.response_field)
-    data_batcher = DataBatcher(inference_model, extract_preprocessor, clean_postprocessor, batch_size=args.batch_size)
-    data_saver = DataSaver(args.text_only_output)
-    general_pipeline = PipelineExecutor(
-        data_loader,
-        data_filter,
-        data_batcher,
-        data_saver
-    )
+    data_preprocessor = ScoreAnswerPreProcessor(args.query_field,
+                                                args.question_field, args.answer_field,
+                                                demo_prompt_score)
+    data_postprocessor = CleanJudgeTagPostProcessor(args.response_field)
+    data_batcher = DataBatcher(inference_model, data_preprocessor, data_postprocessor, batch_size=args.batch_size)
 
     # Process multimodal dataset
     if args.multimodal_input:
         logger.info("Processing multimodal dataset...")
-        general_pipeline.execute_pipeline(
+        data_saver = DataSaver(args.multimodal_output)
+        multimodal_pipeline = PipelineExecutor(
+            data_loader,
+            data_filter,
+            data_batcher,
+            data_saver
+        )
+        multimodal_pipeline.execute_pipeline(
             args.multimodal_input,
             args.multimodal_output,
             args.rerun
@@ -146,7 +146,14 @@ def main():
     # Process text-only dataset
     if args.text_only_input:
         logger.info("Processing text-only dataset...")
-        general_pipeline.execute_pipeline(
+        data_saver = DataSaver(args.text_only_output)
+        text_pipeline = PipelineExecutor(
+            data_loader,
+            data_filter,
+            data_batcher,
+            data_saver
+        )
+        text_pipeline.execute_pipeline(
             args.text_only_input,
             args.text_only_output,
             args.rerun
