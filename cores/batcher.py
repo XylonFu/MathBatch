@@ -1,6 +1,6 @@
 # cores/batcher.py
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from models.base import BaseInferenceModel
 from .base import BaseDataBatcher, BaseDataProcessor
@@ -18,8 +18,9 @@ class DataBatcher(BaseDataBatcher):
     def process_batches(
             self,
             data: List[Dict[str, Any]],
-            data_processor: BaseDataProcessor,
-            response_field: str
+            response_field: str,
+            data_preprocessor: BaseDataProcessor,
+            data_postprocessor: Optional[BaseDataProcessor] = None,
     ) -> List[Dict[str, Any]]:
         """Processes data and generates responses"""
         # Process in batches
@@ -27,7 +28,7 @@ class DataBatcher(BaseDataBatcher):
             batch = data[start_index:start_index + self.batch_size]
 
             # Prepare model inputs
-            model_inputs = data_processor.process_batch(batch)
+            model_inputs = data_preprocessor.process_batch(batch)
 
             # Get model responses
             responses = self.model.generate_responses(
@@ -38,5 +39,9 @@ class DataBatcher(BaseDataBatcher):
             # Update data with responses
             for idx, item in enumerate(batch):
                 item[response_field] = responses[idx]
+
+            # Apply post-processing
+            if data_postprocessor:
+                batch = data_postprocessor.process_batch(batch)
 
             yield batch  # Return processed batch

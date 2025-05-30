@@ -1,7 +1,7 @@
 # cores/base.py
 import logging
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +61,9 @@ class BaseDataBatcher(ABC):
     def process_batches(
             self,
             data: List[Dict[str, Any]],
-            data_processor: BaseDataProcessor,
-            response_field: str
+            response_field: str,
+            data_preprocessor: BaseDataProcessor,
+            data_postprocessor: Optional[BaseDataProcessor] = None
     ) -> List[Dict[str, Any]]:
         """Processes data and generates responses"""
         pass

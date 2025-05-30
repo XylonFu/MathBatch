@@ -10,11 +10,12 @@ from .base import BaseDataProcessor
 logger = logging.getLogger(__name__)
 
 
-class MultimodalDataProcessor(BaseDataProcessor):
+class MultimodalDataPreProcessor(BaseDataProcessor):
     """Processor for multimodal (text + image) data"""
 
     def __init__(self, query_field: str, image_base_path: str, image_field: str):
-        super().__init__(query_field)
+        super().__init__(field_name=query_field)
+        self.query_field = query_field
         self.image_base_path = image_base_path
         self.image_field = image_field
 
@@ -46,8 +47,12 @@ class MultimodalDataProcessor(BaseDataProcessor):
         return {"prompts": prompts, "images": images}
 
 
-class TextOnlyDataProcessor(BaseDataProcessor):
+class TextOnlyDataPreProcessor(BaseDataProcessor):
     """Processor for text-only data"""
+
+    def __init__(self, query_field: str):
+        super().__init__(field_name=query_field)
+        self.query_field = query_field
 
     def process_item(self, item: Dict[str, Any]) -> Dict[str, Any]:
         """Processes a single text-only item"""

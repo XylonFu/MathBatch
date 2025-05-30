@@ -8,7 +8,7 @@ from cores.batcher import DataBatcher
 from cores.executor import PipelineExecutor
 from cores.filter import DataFilter
 from cores.loader import DataLoader
-from cores.processor import MultimodalDataProcessor, TextOnlyDataProcessor
+from cores.processor import MultimodalDataPreProcessor, TextOnlyDataPreProcessor
 from cores.saver import DataSaver
 from models.vllm import VLLMInferenceModel
 
@@ -117,13 +117,13 @@ def main():
     # Create shared components
     data_loader = DataLoader(args.index_field, args.response_field)
     data_filter = DataFilter(args.response_field, args.rerun)
-    batch_processor = DataBatcher(inference_model, args.batch_size)
+    data_batcher = DataBatcher(inference_model, args.batch_size)
 
     # Process multimodal dataset
     if args.multimodal_input:
         logger.info("Processing multimodal dataset...")
 
-        multimodal_processor = MultimodalDataProcessor(
+        multimodal_preprocessor = MultimodalDataPreProcessor(
             args.query_field,
             args.image_base_path,
             args.image_field
@@ -132,10 +132,10 @@ def main():
 
         multimodal_pipeline = PipelineExecutor(
             data_loader,
-            multimodal_processor,
             data_filter,
-            batch_processor,
-            data_saver
+            data_batcher,
+            data_saver,
+            multimodal_preprocessor,
         )
         multimodal_pipeline.execute_pipeline(
             args.multimodal_input,
@@ -149,15 +149,15 @@ def main():
     if args.text_only_input:
         logger.info("Processing text-only dataset...")
 
-        text_processor = TextOnlyDataProcessor(args.query_field)
+        text_preprocessor = TextOnlyDataPreProcessor(args.query_field)
         data_saver = DataSaver(args.text_only_output)
 
         text_pipeline = PipelineExecutor(
             data_loader,
-            text_processor,
             data_filter,
-            batch_processor,
-            data_saver
+            data_batcher,
+            data_saver,
+            text_preprocessor,
         )
         text_pipeline.execute_pipeline(
             args.text_only_input,

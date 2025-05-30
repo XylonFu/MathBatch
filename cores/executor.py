@@ -1,6 +1,7 @@
 # cores/executor.py
 import logging
 import os
+from typing import Optional
 
 from .base import (
     BaseDataLoader,
@@ -19,16 +20,18 @@ class PipelineExecutor:
     def __init__(
             self,
             data_loader: BaseDataLoader,
-            data_processor: BaseDataProcessor,
             data_filter: BaseDataFilter,
-            batch_processor: BaseDataBatcher,
-            data_saver: BaseDataSaver
+            data_batcher: BaseDataBatcher,
+            data_saver: BaseDataSaver,
+            data_preprocessor: BaseDataProcessor,
+            data_postprocessor: Optional[BaseDataProcessor] = None
     ):
         self.data_loader = data_loader
-        self.data_processor = data_processor
         self.data_filter = data_filter
-        self.batch_processor = batch_processor
+        self.data_batcher = data_batcher
         self.data_saver = data_saver
+        self.data_preprocessor = data_preprocessor
+        self.data_postprocessor = data_postprocessor
 
     def execute_pipeline(
             self,
@@ -63,10 +66,11 @@ class PipelineExecutor:
 
         # Process data in batches
         processed_count = 0
-        for batch in self.batch_processor.process_batches(
+        for batch in self.data_batcher.process_batches(
                 pending_items,
-                self.data_processor,
-                self.data_loader.response_field
+                self.data_loader.response_field,
+                self.data_preprocessor,
+                self.data_postprocessor
         ):
             processed_count += len(batch)
             logger.info(f"Processed: {processed_count}/{pending_count} items")
