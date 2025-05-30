@@ -1,8 +1,11 @@
 # plugins/mathverse/extract_answer.py
-import argparse
-import logging
 import sys
 from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent.parent.parent))
+
+import argparse
+import logging
 
 from vllm import LLM, SamplingParams
 
@@ -14,8 +17,6 @@ from cores.saver import DataSaver
 from models.vllm import VLLMInferenceModel
 from plugins.mathverse.processor import CleanExtractTagPostProcessor, ExtractionAnswerPreProcessor
 from plugins.mathverse.prompts import demo_prompt_extract
-
-sys.path.append(str(Path(__file__).parent.parent.parent))
 
 # Configure logging
 logging.basicConfig(
