@@ -1,3 +1,4 @@
+import re
 from typing import Dict, Any, List
 
 from cores.base import BaseDataProcessor
@@ -24,16 +25,11 @@ class StripPostProcessor(BaseDataProcessor):
         self.response_field = response_field
 
     def process_item(self, item: Dict[str, Any]) -> Dict[str, Any]:
-        response = item.get(self.response_field, "")
-        if isinstance(response, str):
-            item[self.response_field] = response.strip()
+        item[self.response_field] = item[self.response_field].strip()
         return item
 
     def process_batch(self, batch: List[Dict[str, Any]]) -> Dict[str, List]:
-        responses = []
-        for item in batch:
-            processed = self.process_item(item)
-            responses.append(processed.get(self.response_field))
+        responses = [self.process_item(item)[self.response_field] for item in batch]
         return {"responses": responses}
 
 
@@ -43,7 +39,15 @@ class CleanExtractTagPostProcessor(StripPostProcessor):
         self.response_field = response_field
 
     def process_item(self, item: Dict[str, Any]) -> Dict[str, Any]:
-        response = item.get(self.response_field, "")
-        if isinstance(response, str):
-            item[self.response_field] = response.replace('Extracted Answer: ', '').strip()
+        response = item[self.response_field].replace('Extracted Answer: ', '').strip()
+
+        think_pattern = r'<think>.*?</think>(.*)'
+        match = re.search(think_pattern, response, re.DOTALL)
+
+        if match:
+            content_after_think = match.group(1).strip()
+            item[self.response_field] = content_after_think
+        else:
+            item[self.response_field] = response
+
         return item

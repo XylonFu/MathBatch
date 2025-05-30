@@ -43,6 +43,10 @@ class DataBatcher(BaseDataBatcher):
 
             # Apply post-processing
             if self.data_postprocessor:
-                batch = self.data_postprocessor.process_batch(batch)
+                processed_responses = self.data_postprocessor.process_batch(batch)
+
+                # Update data with processed responses
+                for item, processed_response in zip(batch, processed_responses["responses"]):
+                    item[response_field] = processed_response
 
             yield batch  # Return processed batch

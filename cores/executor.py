@@ -6,7 +6,6 @@ from typing import Optional
 from .base import (
     BaseDataLoader,
     BaseDataFilter,
-    BaseDataProcessor,
     BaseDataBatcher,
     BaseDataSaver
 )
