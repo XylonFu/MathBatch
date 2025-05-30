@@ -59,10 +59,15 @@ class CleanJudgeTagPostProcessor(StripPostProcessor):
         think_pattern = r'<think>.*?</think>(.*)'
         match = re.search(think_pattern, response, re.DOTALL)
 
-        if match:
-            content_after_think = match.group(1).strip()
-            item[self.response_field] = int(content_after_think)
-        else:
-            item[self.response_field] = int(response)
+        try:
+            if match:
+                content_after_think = match.group(1).strip()
+                parsed_value = int(content_after_think)
+            else:
+                parsed_value = int(response)
+
+            item[self.response_field] = parsed_value if parsed_value in (0, 1) else 0
+        except ValueError:
+            item[self.response_field] = 0
 
         return item
