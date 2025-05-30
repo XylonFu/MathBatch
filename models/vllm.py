@@ -95,7 +95,8 @@ class MessageConstructor:
     def _generate_chat_prompt(self, messages: List[dict]) -> str:
         """Generates chat prompt template"""
         extra_args = {}
-        if "qwen" in self.model_name.lower():
+        if "qwen3" in self.model_name.lower():
+            print("Detect Qwen3 Model: Set 'enable_thinking' to 'False'.")
             extra_args["enable_thinking"] = False
 
         return self.tokenizer.apply_chat_template(
