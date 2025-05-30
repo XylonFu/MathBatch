@@ -62,3 +62,17 @@ class TextOnlyDataPreProcessor(BaseDataProcessor):
         """Processes a batch of data items"""
         prompts = [self.process_item(item)["prompt"] for item in batch]
         return {"prompts": prompts, "images": [None] * len(batch)}
+
+
+class StripPostProcessor(BaseDataProcessor):
+    def __init__(self, response_field: str):
+        super().__init__(field_name=response_field)
+        self.response_field = response_field
+
+    def process_item(self, item: Dict[str, Any]) -> Dict[str, Any]:
+        item[self.response_field] = item[self.response_field].strip()
+        return item
+
+    def process_batch(self, batch: List[Dict[str, Any]]) -> Dict[str, List]:
+        responses = [self.process_item(item)[self.response_field] for item in batch]
+        return {"responses": responses}
