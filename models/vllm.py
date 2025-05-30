@@ -96,7 +96,6 @@ class MessageConstructor:
         """Generates chat prompt template"""
         extra_args = {}
         if "qwen3" in self.model_name.lower():
-            print("Detect Qwen3 Model: Set 'enable_thinking' to 'False'.")
             extra_args["enable_thinking"] = False
 
         return self.tokenizer.apply_chat_template(
@@ -141,6 +140,8 @@ class VLLMInferenceModel(BaseInferenceModel):
                 requests,
                 sampling_params=self.sampling_params
             )
+
+            print(f"First output: {outputs[0].outputs[0].text}")
 
             return [output.outputs[0].text for output in outputs]
         except Exception as e:
