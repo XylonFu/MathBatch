@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 from collections import defaultdict
 
 
@@ -8,9 +9,16 @@ def read_json(file_path):
         return json.load(f)
 
 
+def save_json(data, file_path):
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, 'w') as f:
+        json.dump(data, f, indent=2)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_file', type=str, required=True, help='Path to JSON file with judgement results')
+    parser.add_argument('--output_file', type=str, required=True, help='Path to save output JSON with statistics')
     args = parser.parse_args()
 
     # 读取JSON文件
@@ -23,6 +31,14 @@ def main():
     version_dict = defaultdict(list)
     total_right = 0
     total_count = len(results)
+
+    # 准备输出数据结构
+    output_stats = {
+        "by_subject_subfield": {},
+        "by_subject_total": {},
+        "by_version": {},
+        "overall": {}
+    }
 
     # 遍历所有结果进行统计
     for inst in results:
@@ -45,12 +61,10 @@ def main():
         if judgement == 1:
             total_right += 1
 
-    # 打印按subject和subfield分组的准确率
-    print("\n" + "=" * 50)
-    print("Accuracy by Subject and Subfield:")
-    print("=" * 50)
-
+    # 按subject和subfield分组统计
+    subject_stats = {}
     for subject, subfields in subject_subfield_dict.items():
+        subject_stats[subject] = {"subfields": {}, "total": {}}
         subject_right = 0
         subject_total = 0
 
@@ -62,28 +76,73 @@ def main():
             subject_right += subfield_right
             subject_total += subfield_total
 
-            print(f"{subject} - {subfield}: {subfield_acc:.4f} ({subfield_right}/{subfield_total})")
+            # 添加到输出结构
+            subject_stats[subject]["subfields"][subfield] = {
+                "correct": subfield_right,
+                "total": subfield_total,
+                "accuracy": subfield_acc
+            }
 
+        # 添加学科总计
         subject_acc = subject_right / subject_total if subject_total > 0 else 0
-        print(f"{subject} TOTAL: {subject_acc:.4f} ({subject_right}/{subject_total})")
-        print("-" * 50)
+        subject_stats[subject]["total"] = {
+            "correct": subject_right,
+            "total": subject_total,
+            "accuracy": subject_acc
+        }
 
-    # 打印按problem_version分组的准确率
-    print("\n" + "=" * 50)
-    print("Accuracy by Problem Version:")
-    print("=" * 50)
-
+    # 按版本统计
+    version_stats = {}
     for version, judgements in version_dict.items():
         version_right = sum(judgements)
         version_total = len(judgements)
         version_acc = version_right / version_total if version_total > 0 else 0
 
-        print(f"{version}: {version_acc:.4f} ({version_right}/{version_total})")
+        version_stats[version] = {
+            "correct": version_right,
+            "total": version_total,
+            "accuracy": version_acc
+        }
 
-    # 打印总体准确率
+    # 总体统计
     total_acc = total_right / total_count if total_count > 0 else 0
+    overall_stats = {
+        "correct": total_right,
+        "total": total_count,
+        "accuracy": total_acc
+    }
+
+    # 填充输出结构
+    output_stats["by_subject_subfield"] = subject_stats
+    output_stats["by_version"] = version_stats
+    output_stats["overall"] = overall_stats
+
+    # 保存到JSON文件
+    save_json(output_stats, args.output_file)
+    print(f"Statistics saved to {args.output_file}")
+
+    # 打印结果到控制台
     print("\n" + "=" * 50)
-    print(f"OVERALL ACCURACY: {total_acc:.4f} ({total_right}/{total_count})")
+    print("Accuracy by Subject and Subfield:")
+    print("=" * 50)
+
+    for subject, data in subject_stats.items():
+        print(f"\n{subject}:")
+        for subfield, stats in data["subfields"].items():
+            print(f"  {subfield}: {stats['accuracy']:.4f} ({stats['correct']}/{stats['total']})")
+        total_stats = data["total"]
+        print(f"  TOTAL: {total_stats['accuracy']:.4f} ({total_stats['correct']}/{total_stats['total']})")
+        print("-" * 50)
+
+    print("\n" + "=" * 50)
+    print("Accuracy by Problem Version:")
+    print("=" * 50)
+
+    for version, stats in version_stats.items():
+        print(f"{version}: {stats['accuracy']:.4f} ({stats['correct']}/{stats['total']})")
+
+    print("\n" + "=" * 50)
+    print(f"OVERALL ACCURACY: {overall_stats['accuracy']:.4f} ({overall_stats['correct']}/{overall_stats['total']})")
     print("=" * 50)
 
 
