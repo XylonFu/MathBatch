@@ -23,15 +23,11 @@ class PipelineExecutor:
             data_filter: BaseDataFilter,
             data_batcher: BaseDataBatcher,
             data_saver: BaseDataSaver,
-            data_preprocessor: BaseDataProcessor,
-            data_postprocessor: Optional[BaseDataProcessor] = None
     ):
         self.data_loader = data_loader
         self.data_filter = data_filter
         self.data_batcher = data_batcher
         self.data_saver = data_saver
-        self.data_preprocessor = data_preprocessor
-        self.data_postprocessor = data_postprocessor
 
     def execute_pipeline(
             self,
@@ -68,9 +64,7 @@ class PipelineExecutor:
         processed_count = 0
         for batch in self.data_batcher.process_batches(
                 pending_items,
-                self.data_loader.response_field,
-                self.data_preprocessor,
-                self.data_postprocessor
+                self.data_loader.response_field
         ):
             processed_count += len(batch)
             logger.info(f"Processed: {processed_count}/{pending_count} items")
