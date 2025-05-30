@@ -1,4 +1,4 @@
-# extract_answer.py
+# plugins/mathverse/extract_answer.py
 import argparse
 import logging
 
@@ -8,7 +8,7 @@ from cores.batcher import DataBatcher
 from cores.executor import PipelineExecutor
 from cores.filter import DataFilter
 from cores.loader import DataLoader
-from cores.processor import MultimodalDataPreProcessor, TextOnlyDataPreProcessor
+from cores.processor import TextOnlyDataPreProcessor
 from cores.saver import DataSaver
 from models.vllm import VLLMInferenceModel
 from plugins.mathverse.processor import CleanExtractTagPostProcessor
@@ -30,13 +30,9 @@ def validate_arguments(args) -> bool:
         return False
 
     # Validate multimodal parameters
-    if args.multimodal_input:
-        if not args.image_base_path:
-            logger.error("Image base path is required for multimodal processing")
-            return False
-        if not args.multimodal_output:
-            logger.error("Output file must be specified for multimodal dataset")
-            return False
+    if args.multimodal_input and not args.multimodal_output:
+        logger.error("Output file must be specified for multimodal dataset")
+        return False
 
     # Validate text-only parameters
     if args.text_only_input and not args.text_only_output:
@@ -76,15 +72,11 @@ def main():
                         help="Output file for text-only results")
 
     # Processing parameters
-    parser.add_argument("--image_base_path", type=str,
-                        help="Base path for images (required for multimodal)")
     parser.add_argument("--index_field", type=str, default="sample_index",
                         help="Field for record identification")
-    parser.add_argument("--query_field", type=str, default="query_cot",
+    parser.add_argument("--query_field", type=str, default="model_answer",
                         help="Field containing prompt queries")
-    parser.add_argument("--image_field", type=str, default="image",
-                        help="Field containing image paths (multimodal)")
-    parser.add_argument("--response_field", type=str, default="model_answer",
+    parser.add_argument("--response_field", type=str, default="extraction",
                         help="Field to store generated responses")
     parser.add_argument("--batch_size", type=int, default=500,
                         help="Processing batch size")
@@ -118,26 +110,21 @@ def main():
     # Create shared components
     data_loader = DataLoader(args.index_field, args.response_field)
     data_filter = DataFilter(args.response_field, args.rerun)
+    text_preprocessor = TextOnlyDataPreProcessor(args.query_field)
+    clean_postprocessor = CleanExtractTagPostProcessor(args.response_field)
+    data_batcher = DataBatcher(inference_model, text_preprocessor, clean_postprocessor, batch_size=args.batch_size)
+    data_saver = DataSaver(args.text_only_output)
+    general_pipeline = PipelineExecutor(
+        data_loader,
+        data_filter,
+        data_batcher,
+        data_saver
+    )
 
     # Process multimodal dataset
     if args.multimodal_input:
         logger.info("Processing multimodal dataset...")
-
-        multimodal_preprocessor = MultimodalDataPreProcessor(
-            args.query_field,
-            args.image_base_path,
-            args.image_field
-        )
-        data_batcher = DataBatcher(inference_model, multimodal_preprocessor, batch_size=args.batch_size)
-        data_saver = DataSaver(args.multimodal_output)
-
-        multimodal_pipeline = PipelineExecutor(
-            data_loader,
-            data_filter,
-            data_batcher,
-            data_saver
-        )
-        multimodal_pipeline.execute_pipeline(
+        general_pipeline.execute_pipeline(
             args.multimodal_input,
             args.multimodal_output,
             args.rerun
@@ -148,19 +135,7 @@ def main():
     # Process text-only dataset
     if args.text_only_input:
         logger.info("Processing text-only dataset...")
-
-        text_preprocessor = TextOnlyDataPreProcessor(args.query_field)
-        clean_postprocessor = CleanExtractTagPostProcessor(args.response_field)
-        data_batcher = DataBatcher(inference_model, text_preprocessor, clean_postprocessor, batch_size=args.batch_size)
-        data_saver = DataSaver(args.text_only_output)
-
-        text_pipeline = PipelineExecutor(
-            data_loader,
-            data_filter,
-            data_batcher,
-            data_saver
-        )
-        text_pipeline.execute_pipeline(
+        general_pipeline.execute_pipeline(
             args.text_only_input,
             args.text_only_output,
             args.rerun
