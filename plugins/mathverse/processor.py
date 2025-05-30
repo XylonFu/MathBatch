@@ -59,6 +59,13 @@ class CleanJudgeTagPostProcessor(StripPostProcessor):
         think_pattern = r'<think>.*?</think>(.*)'
         match = re.search(think_pattern, response, re.DOTALL)
 
+        def extract_and_validate_digit(s: str) -> int:
+            digit_match = re.search(r'\d', s)
+            if digit_match:
+                digit = int(digit_match.group(0))
+                return digit if digit in (0, 1) else 0
+            return 0
+
         try:
             if match:
                 content_after_think = match.group(1).strip()
@@ -66,8 +73,11 @@ class CleanJudgeTagPostProcessor(StripPostProcessor):
             else:
                 parsed_value = int(response)
 
-            item[self.response_field] = parsed_value if parsed_value in (0, 1) else 0
+            if parsed_value in (0, 1):
+                item[self.response_field] = parsed_value
+            else:
+                item[self.response_field] = extract_and_validate_digit(response)
         except ValueError:
-            item[self.response_field] = 0
+            item[self.response_field] = extract_and_validate_digit(response)
 
         return item
