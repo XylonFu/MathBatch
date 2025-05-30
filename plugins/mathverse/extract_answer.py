@@ -1,4 +1,8 @@
 # plugins/mathverse/extract_answer.py
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent.parent))
+
 import argparse
 import logging
 
