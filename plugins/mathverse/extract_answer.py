@@ -1,10 +1,8 @@
 # plugins/mathverse/extract_answer.py
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent.parent))
-
 import argparse
 import logging
+import sys
+from pathlib import Path
 
 from vllm import LLM, SamplingParams
 
@@ -12,10 +10,12 @@ from cores.batcher import DataBatcher
 from cores.executor import PipelineExecutor
 from cores.filter import DataFilter
 from cores.loader import DataLoader
-from cores.processor import TextOnlyDataPreProcessor
 from cores.saver import DataSaver
 from models.vllm import VLLMInferenceModel
-from plugins.mathverse.processor import CleanExtractTagPostProcessor
+from plugins.mathverse.processor import CleanExtractTagPostProcessor, ExtractionAnswerPreProcessor
+from plugins.mathverse.prompts import demo_prompt_extract
+
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
 # Configure logging
 logging.basicConfig(
@@ -114,9 +114,9 @@ def main():
     # Create shared components
     data_loader = DataLoader(args.index_field, args.response_field)
     data_filter = DataFilter(args.response_field, args.rerun)
-    text_preprocessor = TextOnlyDataPreProcessor(args.query_field)
+    extract_preprocessor = ExtractionAnswerPreProcessor(args.query_field, demo_prompt_extract)
     clean_postprocessor = CleanExtractTagPostProcessor(args.response_field)
-    data_batcher = DataBatcher(inference_model, text_preprocessor, clean_postprocessor, batch_size=args.batch_size)
+    data_batcher = DataBatcher(inference_model, extract_preprocessor, clean_postprocessor, batch_size=args.batch_size)
     data_saver = DataSaver(args.text_only_output)
     general_pipeline = PipelineExecutor(
         data_loader,
