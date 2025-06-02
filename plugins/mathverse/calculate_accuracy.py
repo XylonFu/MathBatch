@@ -1,56 +1,70 @@
 import argparse
 import json
+import logging
 import os
 from collections import defaultdict
 
+# 配置日志
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+
+def validate_arguments(args) -> bool:
+    """Validates command-line arguments"""
+    # 验证至少提供了一个输入
+    if not args.multimodal_input and not args.text_only_input:
+        logger.error("At least one input file must be provided")
+        return False
+
+    # 验证多模态参数
+    if args.multimodal_input and not args.multimodal_output:
+        logger.error("Output file must be specified for multimodal dataset")
+        return False
+
+    # 验证纯文本参数
+    if args.text_only_input and not args.text_only_output:
+        logger.error("Output file must be specified for text-only dataset")
+        return False
+
+    return True
+
 
 def read_json(file_path):
-    with open(file_path, 'r') as f:
-        return json.load(f)
+    """读取JSON文件"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Error reading {file_path}: {str(e)}")
+        raise
 
 
 def save_json(data, file_path):
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, 'w') as f:
-        json.dump(data, f, indent=2)
+    """保存JSON文件"""
+    try:
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        logger.info(f"Successfully saved to {file_path}")
+    except Exception as e:
+        logger.error(f"Error saving to {file_path}: {str(e)}")
+        raise
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--input_file', type=str, required=True, help='Path to JSON file with judgement results')
-    parser.add_argument('--output_file', type=str, required=True, help='Path to save output JSON with statistics')
-    args = parser.parse_args()
-
-    # 读取JSON文件
-    print(f"Reading {args.input_file}...")
-    results = read_json(args.input_file)
-    print(f"Loaded {len(results)} records")
-
-    # 初始化统计字典
+def calculate_statistics(results):
+    """计算数据集统计信息"""
     subject_subfield_dict = defaultdict(lambda: defaultdict(list))
     version_dict = defaultdict(list)
     total_right = 0
     total_count = len(results)
 
-    # 准备输出数据结构
-    output_stats = {
-        "by_subject_subfield": {},
-        "by_subject_total": {},
-        "by_version": {},
-        "overall": {}
-    }
-
     # 遍历所有结果进行统计
     for inst in results:
-        # 获取subject和subfield信息（优先从metadata获取）
-        meta = inst.get('metadata', {}) or inst.get('category', {})
+        # 获取subject和subfield信息
+        meta = inst.get('metadata', {}) or inst.get('category', {}) or {}
         subject = meta.get('subject', 'Unknown')
         subfield = meta.get('subfield', 'Unknown')
-
-        # 获取problem_version
         version = inst.get('problem_version', 'Unknown')
-
-        # 获取judgement结果
         judgement = inst.get('judgement', 0)
 
         # 统计到对应分类
@@ -60,6 +74,21 @@ def main():
         # 统计总正确数
         if judgement == 1:
             total_right += 1
+
+    return subject_subfield_dict, version_dict, total_right, total_count
+
+
+def generate_report(results, dataset_type):
+    """生成统计报告"""
+    subject_subfield_dict, version_dict, total_right, total_count = calculate_statistics(results)
+
+    # 准备输出数据结构
+    output_stats = {
+        "by_subject_subfield": {},
+        "by_subject_total": {},
+        "by_version": {},
+        "overall": {}
+    }
 
     # 按subject和subfield分组统计
     subject_stats = {}
@@ -117,33 +146,71 @@ def main():
     output_stats["by_version"] = version_stats
     output_stats["overall"] = overall_stats
 
-    # 保存到JSON文件
-    save_json(output_stats, args.output_file)
-    print(f"Statistics saved to {args.output_file}")
-
     # 打印结果到控制台
-    print("\n" + "=" * 50)
-    print("Accuracy by Subject and Subfield:")
-    print("=" * 50)
-
-    for subject, data in subject_stats.items():
-        print(f"\n{subject}:")
-        for subfield, stats in data["subfields"].items():
-            print(f"  {subfield}: {stats['accuracy']:.4f} ({stats['correct']}/{stats['total']})")
-        total_stats = data["total"]
-        print(f"  TOTAL: {total_stats['accuracy']:.4f} ({total_stats['correct']}/{total_stats['total']})")
-        print("-" * 50)
-
-    print("\n" + "=" * 50)
-    print("Accuracy by Problem Version:")
-    print("=" * 50)
-
-    for version, stats in version_stats.items():
-        print(f"{version}: {stats['accuracy']:.4f} ({stats['correct']}/{stats['total']})")
-
-    print("\n" + "=" * 50)
+    print(f"\n{dataset_type} Dataset Results")
+    print("=" * 60)
     print(f"OVERALL ACCURACY: {overall_stats['accuracy']:.4f} ({overall_stats['correct']}/{overall_stats['total']})")
-    print("=" * 50)
+
+    print("\nAccuracy by Subject:")
+    for subject, data in subject_stats.items():
+        total_stats = data["total"]
+        print(f"  {subject}: {total_stats['accuracy']:.4f} ({total_stats['correct']}/{total_stats['total']})")
+
+    print("\nAccuracy by Problem Version:")
+    for version, stats in version_stats.items():
+        print(f"  {version}: {stats['accuracy']:.4f} ({stats['correct']}/{stats['total']})")
+
+    print("=" * 60)
+
+    return output_stats
+
+
+def process_dataset(input_file, output_file, dataset_type):
+    """处理单个数据集"""
+    logger.info(f"Processing {dataset_type} dataset from {input_file}")
+    results = read_json(input_file)
+    logger.info(f"Loaded {len(results)} records for {dataset_type} dataset")
+
+    stats = generate_report(results, dataset_type)
+    save_json(stats, output_file)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Generate statistics from judgement results")
+
+    # 多模态数据集参数
+    parser.add_argument("--multimodal_input", type=str,
+                        help="Input file for multimodal dataset")
+    parser.add_argument("--multimodal_output", type=str,
+                        help="Output file for multimodal results")
+
+    # 纯文本数据集参数
+    parser.add_argument("--text_only_input", type=str,
+                        help="Input file for text-only dataset")
+    parser.add_argument("--text_only_output", type=str,
+                        help="Output file for text-only results")
+
+    args = parser.parse_args()
+
+    # 验证参数
+    if not validate_arguments(args):
+        return
+
+    # 处理多模态数据集
+    if args.multimodal_input:
+        process_dataset(
+            args.multimodal_input,
+            args.multimodal_output,
+            "Multimodal"
+        )
+
+    # 处理纯文本数据集
+    if args.text_only_input:
+        process_dataset(
+            args.text_only_input,
+            args.text_only_output,
+            "Text-Only"
+        )
 
 
 if __name__ == '__main__':
