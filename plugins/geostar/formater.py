@@ -3,21 +3,16 @@ import json
 
 
 def process_jsonl(input_file, output_file):
-    prefix_to_remove = "/gpfs/work/int/xinlongfu24/xinlong_fu/downloads/datasets/STAR/G-LLaVA/"
-
     with open(input_file, "r", encoding="utf-8") as infile, \
             open(output_file, "w", encoding="utf-8") as outfile:
-
         for line in infile:
             data = json.loads(line.strip())
 
             # 提取content字段（取messages数组的第一个元素）
             content = data["messages"][0]["content"] if data.get("messages") and len(data["messages"]) > 0 else ""
 
-            # 处理images字段：取第一个元素并移除指定路径前缀
-            image_path = ""
-            if data.get("images") and len(data["images"]) > 0:
-                image_path = data["images"][0].replace(prefix_to_remove, "", 1).replace("//", "/")
+            # 处理images字段：取第一个元素
+            image_path = data["images"][0] if data.get("images") and len(data["images"]) > 0 else ""
 
             # 创建新对象并写入
             new_obj = {
