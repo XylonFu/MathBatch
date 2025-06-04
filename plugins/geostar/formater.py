@@ -16,8 +16,9 @@ def process_jsonl(input_file, output_file):
 
             # 创建新对象并写入
             new_obj = {
-                "content": content,
-                "images": image_path
+                "id": data.get("id", ""),
+                "images": image_path,
+                "content": content
             }
             outfile.write(json.dumps(new_obj, ensure_ascii=False) + "\n")
 
