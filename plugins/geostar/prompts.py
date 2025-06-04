@@ -22,6 +22,6 @@ LONGCOT_REWRITER_USER_PROMPT = (
     "5. Rewrite everything in the first-person point of view, as a continuous inner monologue.\n"
     "6. Do not include any role tags or speaker identifiers.\n"
     "7. Ensure the entire output is written in English only.\n"
-    "8. Output the rewritten long chain of thought within a bash code block, formatted as: ```markdown ... ```.\n\n"
+    "8. Output the rewritten long chain of thought inside a markdown code block, formatted as: ```markdown ... ```.\n\n"
     "REWRITE THE CONVERSATION INTO A LONG CHAIN OF THOUGHT NOW."
 )
