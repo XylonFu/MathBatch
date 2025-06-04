@@ -36,11 +36,12 @@ class ImagePreprocessor:
 
 class MessageConstructor:
     """Constructs model input messages"""
-    SYSTEM_PROMPT = {"role": "system", "content": "You are a helpful assistant."}
+    DEFAULT_SYSTEM_PROMPT = {"role": "system", "content": "You are a helpful assistant."}
 
-    def __init__(self, model_name: str):
+    def __init__(self, model_name: str, system_prompt: Optional[Dict[str, str]] = None):
         self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.system_prompt = system_prompt or self.DEFAULT_SYSTEM_PROMPT
 
     def construct(
             self,
@@ -88,7 +89,7 @@ class MessageConstructor:
     ) -> List[dict]:
         """Formats message list"""
         return [
-            self.SYSTEM_PROMPT,
+            self.system_prompt,
             {"role": "user", "content": user_content}
         ]
 
@@ -114,11 +115,12 @@ class VLLMInferenceModel(BaseInferenceModel):
             llm: LLM,
             sampling_params: SamplingParams,
             model_name: str,
+            system_prompt: Optional[Dict[str, str]] = None
     ):
         self.llm = llm
         self.sampling_params = sampling_params
         self.model_name = model_name
-        self.message_constructor = MessageConstructor(model_name)
+        self.message_constructor = MessageConstructor(model_name, system_prompt)
 
     def generate_responses(
             self,
