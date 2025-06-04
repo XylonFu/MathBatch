@@ -1,5 +1,7 @@
 import json
 
+from prompts import LONGCOT_REWRITER_USER_PROMPT
+
 
 def process_json(input_file, output_file):
     # 读取所有行到列表中
@@ -17,11 +19,13 @@ def process_json(input_file, output_file):
         # 处理images字段：取第一个元素
         image_path = data["images"][0] if data.get("images") and len(data["images"]) > 0 else ""
 
+        query = content + "\n\n\n" + LONGCOT_REWRITER_USER_PROMPT
+
         # 创建新对象并添加到结果列表
         new_obj = {
             "id": data.get("id", ""),
             "images": image_path,
-            "content": content
+            "content": query
         }
         result.append(new_obj)
 
