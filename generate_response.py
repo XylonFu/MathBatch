@@ -1,6 +1,9 @@
 # generate_response.py
 import argparse
+import importlib.util
 import logging
+import os
+import sys
 
 from vllm import LLM, SamplingParams
 
@@ -42,7 +45,31 @@ def validate_arguments(args) -> bool:
         logger.error("Output file must be specified for text-only dataset")
         return False
 
+    # Validate system prompt file exists if specified
+    if args.system_prompt_file and not os.path.isfile(args.system_prompt_file):
+        logger.error(f"System prompt file not found: {args.system_prompt_file}")
+        return False
+
     return True
+
+
+def load_system_prompt(file_path: str, variable_name: str = "SYSTEM_PROMPT") -> str:
+    """Loads a system prompt variable from a Python file"""
+    # Create module specification
+    spec = importlib.util.spec_from_file_location("prompt_module", file_path)
+    if spec is None:
+        raise ImportError(f"Could not import from file: {file_path}")
+
+    # Create module and execute
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["prompt_module"] = module
+    spec.loader.exec_module(module)
+
+    # Get system prompt variable
+    if not hasattr(module, variable_name):
+        raise AttributeError(f"Variable '{variable_name}' not found in {file_path}")
+
+    return getattr(module, variable_name)
 
 
 def main():
@@ -63,6 +90,12 @@ def main():
                         help="Top-p sampling value")
     parser.add_argument("--max_tokens", type=int, default=1024,
                         help="Maximum tokens to generate")
+
+    # System prompt parameters
+    parser.add_argument("--system_prompt_file", type=str, default=None,
+                        help="Python file containing the system prompt variable")
+    parser.add_argument("--system_prompt_variable", type=str, default="SYSTEM_PROMPT",
+                        help="Variable name containing the system prompt (default: SYSTEM_PROMPT)")
 
     # Dataset parameters
     parser.add_argument("--multimodal_input", type=str,
@@ -96,6 +129,20 @@ def main():
     if not validate_arguments(args):
         return
 
+    # Load system prompt
+    system_prompt = None
+    if args.system_prompt_file:
+        try:
+            system_prompt = load_system_prompt(
+                args.system_prompt_file,
+                args.system_prompt_variable
+            )
+        except Exception as e:
+            logger.error(f"Failed to load system prompt: {str(e)}")
+            return
+    else:
+        logger.info("No system prompt file specified. Using default")
+
     # Initialize model
     logger.info(f"Loading model from: {args.model_path}")
     llm_instance = LLM(
@@ -111,7 +158,8 @@ def main():
     inference_model = VLLMInferenceModel(
         llm=llm_instance,
         sampling_params=sampling_config,
-        model_name=args.model_name
+        model_name=args.model_name,
+        system_prompt=system_prompt
     )
 
     # Create shared components
