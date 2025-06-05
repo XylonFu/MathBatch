@@ -15,14 +15,21 @@ def extract_markdown_content(response):
 
 
 def extract_system_content(content_text):
-    # 提取 "system:" 到 "student_alpha:" 之间的内容
+    # 提取 "system:" 到 "student_alpha:" 之间的内容（不包括标识符）
     system_start = content_text.find('system:')
     if system_start == -1:
         return None
-    student_start = content_text.find('student_alpha:', system_start)
+
+    # 找到system:之后内容的起始位置（跳过标识符本身）
+    content_start = system_start + len('system:')
+
+    # 找到student_alpha:标识符的位置
+    student_start = content_text.find('student_alpha:', content_start)
     if student_start == -1:
         return None
-    return content_text[system_start:student_start].strip()
+
+    # 提取system:和student_alpha:之间的内容（不包括标识符）
+    return content_text[content_start:student_start].strip()
 
 
 def process_item(item):
@@ -69,12 +76,25 @@ def main(input_file, output_file):
     with open(input_file, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
+    # 初始化计数器
+    total_count = len(data)
+    skip_count = 0
+
     # 处理并写入JSONL
     with open(output_file, 'w', encoding='utf-8') as f_out:
         for item in data:
             processed = process_item(item)
-            if processed is not None:
-                f_out.write(json.dumps(processed, ensure_ascii=False) + '\n')
+            if processed is None:
+                skip_count += 1
+                continue
+
+            f_out.write(json.dumps(processed, ensure_ascii=False) + '\n')
+
+    # 打印处理结果统计
+    success_count = total_count - skip_count
+    print(f"处理完成！共处理 {total_count} 条记录")
+    print(f"成功处理: {success_count} 条")
+    print(f"跳过处理: {skip_count} 条")
 
 
 if __name__ == '__main__':
