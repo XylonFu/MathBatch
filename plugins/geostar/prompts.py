@@ -8,7 +8,7 @@ CONVERSATION_REWRITER_USER_PROMPT = (
     "4. Preserve the original order of messages, role tags, and speaker tone.\n"
     "5. Do not introduce any information that goes beyond the original conversation.\n"
     "6. Ensure the entire conversation is written in English only.\n"
-    "7. Output the rewritten conversation within a bash code block, formatted as: ```bash ... ```.\n\n"
+    "7. Output the rewritten conversation within a markdown code block, formatted as: ```markdown ... ```.\n\n"
     "REWRITE THE CONVERSATION NOW."
 )
 LONGCOT_REWRITER_USER_PROMPT = (
