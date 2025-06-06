@@ -17,15 +17,21 @@ def validate_arguments(args: argparse.Namespace) -> bool:
         logger.error("At least one input file must be provided")
         return False
 
-    # 验证多模态参数
-    if args.multimodal_input and not args.multimodal_output:
-        logger.error("Output file must be specified for multimodal dataset")
-        return False
-
-    # 验证纯文本参数
-    if args.text_only_input and not args.text_only_output:
-        logger.error("Output file must be specified for text-only dataset")
-        return False
+    # 如果同时提供了两种输入，则不需要分别提供输出，只需要提供一个输出即可
+    if args.multimodal_input and args.text_only_input:
+        if not args.combined_output:
+            logger.error(
+                "When both multimodal and text-only inputs are provided, a combined output file must be specified with --combined_output")
+            return False
+    else:
+        # 验证多模态参数
+        if args.multimodal_input and not args.multimodal_output:
+            logger.error("Output file must be specified for multimodal dataset")
+            return False
+        # 验证纯文本参数
+        if args.text_only_input and not args.text_only_output:
+            logger.error("Output file must be specified for text-only dataset")
+            return False
 
     return True
 
@@ -215,13 +221,36 @@ def main() -> None:
     parser.add_argument("--text_only_output", type=str,
                         help="Output file for text-only results")
 
+    # 合并输出参数（当同时提供两种输入时）
+    parser.add_argument("--combined_output", type=str,
+                        help="Output file for combined results (requires both multimodal_input and text_only_input)")
+
     args = parser.parse_args()
 
     # 验证参数
     if not validate_arguments(args):
         return
 
-    # 处理多模态数据集
+    # 如果同时提供了多模态和纯文本输入，则合并处理
+    if args.multimodal_input and args.text_only_input:
+        # 读取两个数据集
+        multimodal_results = read_json(args.multimodal_input)
+        text_only_results = read_json(args.text_only_input)
+
+        # 合并列表
+        combined_results = multimodal_results + text_only_results
+        logger.info(
+            f"Loaded {len(multimodal_results)} multimodal records and {len(text_only_results)} text-only records")
+        logger.info(f"Total combined records: {len(combined_results)}")
+
+        # 生成合并报告
+        stats = generate_report(combined_results, "Combined")
+
+        # 保存合并结果到指定的输出文件
+        save_json(stats, args.combined_output)
+        return
+
+    # 否则分别处理各自的数据集
     if args.multimodal_input:
         process_dataset(
             args.multimodal_input,
@@ -229,7 +258,6 @@ def main() -> None:
             "Multimodal"
         )
 
-    # 处理纯文本数据集
     if args.text_only_input:
         process_dataset(
             args.text_only_input,
