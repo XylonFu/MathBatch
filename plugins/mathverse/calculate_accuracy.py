@@ -3,13 +3,14 @@ import json
 import logging
 import os
 from collections import defaultdict
+from typing import Any, Dict, List, Tuple, DefaultDict, Union
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
-def validate_arguments(args) -> bool:
+def validate_arguments(args: argparse.Namespace) -> bool:
     """Validates command-line arguments"""
     # 验证至少提供了一个输入
     if not args.multimodal_input and not args.text_only_input:
@@ -29,7 +30,7 @@ def validate_arguments(args) -> bool:
     return True
 
 
-def read_json(file_path):
+def read_json(file_path: str) -> List[Dict[str, Any]]:
     """读取JSON文件"""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -39,7 +40,7 @@ def read_json(file_path):
         raise
 
 
-def save_json(data, file_path):
+def save_json(data: Any, file_path: str) -> None:
     """保存JSON文件"""
     try:
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -51,10 +52,15 @@ def save_json(data, file_path):
         raise
 
 
-def calculate_statistics(results):
+def calculate_statistics(results: List[Dict[str, Any]]) -> Tuple[
+    DefaultDict[str, DefaultDict[str, List[int]]],
+    DefaultDict[str, List[int]],
+    int,
+    int
+]:
     """计算数据集统计信息"""
-    subject_subfield_dict = defaultdict(lambda: defaultdict(list))
-    version_dict = defaultdict(list)
+    subject_subfield_dict: DefaultDict[str, DefaultDict[str, List[int]]] = defaultdict(lambda: defaultdict(list))
+    version_dict: DefaultDict[str, List[int]] = defaultdict(list)
     total_right = 0
     total_count = len(results)
 
@@ -78,12 +84,17 @@ def calculate_statistics(results):
     return subject_subfield_dict, version_dict, total_right, total_count
 
 
-def generate_report(results, dataset_type):
+def generate_report(results: List[Dict[str, Any]], dataset_type: str) -> Dict[str, Any]:
     """生成统计报告"""
     subject_subfield_dict, version_dict, total_right, total_count = calculate_statistics(results)
 
+    # 定义类型别名
+    StatsDict = Dict[str, Union[int, float]]
+    SubfieldStats = Dict[str, StatsDict]
+    SubjectStats = Dict[str, Union[SubfieldStats, StatsDict]]
+
     # 准备输出数据结构
-    output_stats = {
+    output_stats: Dict[str, Any] = {
         "by_subject_subfield": {},
         "by_subject_total": {},
         "by_version": {},
@@ -91,9 +102,16 @@ def generate_report(results, dataset_type):
     }
 
     # 按subject和subfield分组统计
-    subject_stats = {}
+    subject_stats: Dict[str, SubjectStats] = {}
     for subject, subfields in subject_subfield_dict.items():
-        subject_stats[subject] = {"subfields": {}, "total": {}}
+        subject_stats[subject] = {
+            "subfields": {},
+            "total": {
+                "correct": 0,
+                "total": 0,
+                "accuracy": 0.0
+            }
+        }
         subject_right = 0
         subject_total = 0
 
@@ -121,7 +139,7 @@ def generate_report(results, dataset_type):
         }
 
     # 按版本统计
-    version_stats = {}
+    version_stats: Dict[str, StatsDict] = {}
     for version, judgements in version_dict.items():
         version_right = sum(judgements)
         version_total = len(judgements)
@@ -135,7 +153,7 @@ def generate_report(results, dataset_type):
 
     # 总体统计
     total_acc = total_right / total_count if total_count > 0 else 0
-    overall_stats = {
+    overall_stats: StatsDict = {
         "correct": total_right,
         "total": total_count,
         "accuracy": total_acc
@@ -143,6 +161,13 @@ def generate_report(results, dataset_type):
 
     # 填充输出结构
     output_stats["by_subject_subfield"] = subject_stats
+
+    # 单独提取学科总计信息
+    by_subject_total: Dict[str, StatsDict] = {}
+    for subject, data in subject_stats.items():
+        by_subject_total[subject] = data["total"]
+    output_stats["by_subject_total"] = by_subject_total
+
     output_stats["by_version"] = version_stats
     output_stats["overall"] = overall_stats
 
@@ -165,7 +190,7 @@ def generate_report(results, dataset_type):
     return output_stats
 
 
-def process_dataset(input_file, output_file, dataset_type):
+def process_dataset(input_file: str, output_file: str, dataset_type: str) -> None:
     """处理单个数据集"""
     logger.info(f"Processing {dataset_type} dataset from {input_file}")
     results = read_json(input_file)
@@ -175,7 +200,7 @@ def process_dataset(input_file, output_file, dataset_type):
     save_json(stats, output_file)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Generate statistics from judgement results")
 
     # 多模态数据集参数
