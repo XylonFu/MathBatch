@@ -40,8 +40,8 @@ def validate_file_lists(inputs: List[str], intermediates: List[str], outputs: Li
         return False
 
     for path in inputs + intermediates + outputs:
-        if not path.endswith('.jsonl'):
-            logger.error(f"All file paths must be .jsonl files. Invalid: {path}")
+        if not path.endswith('.json'):
+            logger.error(f"All file paths must be .json files. Invalid: {path}")
             return False
 
     return True
