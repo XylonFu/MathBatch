@@ -103,6 +103,7 @@ class MessageConstructor:
             messages,
             tokenize=False,
             add_generation_prompt=True,
+            trust_remote_code=True,
             **extra_args
         )
 
