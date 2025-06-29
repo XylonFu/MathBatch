@@ -40,45 +40,29 @@ class MessageConstructor:
 
     def __init__(self, model_name: str, system_prompt: Optional[Dict[str, str]] = None):
         self.model_name = model_name
-        self.is_internvl = "internvl" in model_name.lower()
-        if not self.is_internvl:
-            self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.system_prompt = system_prompt or self.DEFAULT_SYSTEM_PROMPT
 
     def construct(
             self,
             prompt: str,
             image: Optional[Image.Image] = None
-    ) -> Dict[str, Union[str, dict, List[dict]]]:
+    ) -> Dict[str, Union[str, dict]]:
         """
         Constructs model input message
         :param prompt: Text prompt
         :param image: PIL image object
         :return: Dictionary containing prompt and optional multi_modal_data
         """
-        messages = self._format_messages(prompt, image)
-
-        if self.is_internvl:
-            # For InternVL, return the raw messages list
-            return {"messages": messages}
-        else:
-            chat_prompt = self._generate_chat_prompt(messages)
-            entry = {"prompt": chat_prompt}
-            if image:
-                entry["multi_modal_data"] = {"image": image}
-            return entry
-
-    def _format_messages(
-            self,
-            prompt: str,
-            image: Optional[Image.Image]
-    ) -> List[dict]:
-        """Formats message list with proper role and content"""
         user_content = self._build_user_content(prompt, image)
-        return [
-            self.system_prompt,
-            {"role": "user", "content": user_content}
-        ]
+        messages = self._format_messages(user_content)
+        chat_prompt = self._generate_chat_prompt(messages)
+
+        entry = {"prompt": chat_prompt}
+        if image:
+            entry["multi_modal_data"] = {"image": image}
+
+        return entry
 
     def _build_user_content(
             self,
@@ -98,6 +82,16 @@ class MessageConstructor:
                 {"type": "text", "text": prompt}
             ]
         return prompt
+
+    def _format_messages(
+            self,
+            user_content: Union[str, list]
+    ) -> List[dict]:
+        """Formats message list"""
+        return [
+            self.system_prompt,
+            {"role": "user", "content": user_content}
+        ]
 
     def _generate_chat_prompt(self, messages: List[dict]) -> str:
         """Generates chat prompt template"""
@@ -126,7 +120,6 @@ class VLLMInferenceModel(BaseInferenceModel):
         self.llm = llm
         self.sampling_params = sampling_params
         self.model_name = model_name
-        self.is_internvl = "internvl" in model_name.lower()
         self.message_constructor = MessageConstructor(model_name, system_prompt)
 
     def generate_responses(
@@ -145,23 +138,14 @@ class VLLMInferenceModel(BaseInferenceModel):
             print(f"First request: {requests[0]}")
 
             # Generate responses
-            if self.is_internvl:
-                # For InternVL, use chat interface with messages
-                outputs = self.llm.chat(
-                    requests,
-                    sampling_params=self.sampling_params
-                )
-                return [output.outputs[0].text for output in outputs]
-            else:
-                # For other models, use generate interface with prompts
-                outputs = self.llm.generate(
-                    requests,
-                    sampling_params=self.sampling_params
-                )
-                return [output.outputs[0].text for output in outputs]
+            outputs = self.llm.generate(
+                requests,
+                sampling_params=self.sampling_params
+            )
 
             print(f"First output: {outputs[0].outputs[0].text}")
 
+            return [output.outputs[0].text for output in outputs]
         except Exception as e:
             logger.error(f"Response generation failed: {str(e)}", exc_info=True)
             return [""] * len(prompts)
