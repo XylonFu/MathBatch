@@ -56,10 +56,10 @@ class MessageConstructor:
         :param image: PIL image object
         :return: Dictionary containing prompt and optional multi_modal_data
         """
-        user_content = self._build_user_content(prompt, image)
-        messages = self._format_messages(user_content)
+        messages = self._format_messages(prompt, image)
 
         if self.is_internvl:
+            # For InternVL, return the raw messages list
             return {"messages": messages}
         else:
             chat_prompt = self._generate_chat_prompt(messages)
@@ -67,6 +67,18 @@ class MessageConstructor:
             if image:
                 entry["multi_modal_data"] = {"image": image}
             return entry
+
+    def _format_messages(
+            self,
+            prompt: str,
+            image: Optional[Image.Image]
+    ) -> List[dict]:
+        """Formats message list with proper role and content"""
+        user_content = self._build_user_content(prompt, image)
+        return [
+            self.system_prompt,
+            {"role": "user", "content": user_content}
+        ]
 
     def _build_user_content(
             self,
@@ -86,16 +98,6 @@ class MessageConstructor:
                 {"type": "text", "text": prompt}
             ]
         return prompt
-
-    def _format_messages(
-            self,
-            user_content: Union[str, list]
-    ) -> List[dict]:
-        """Formats message list"""
-        return [
-            self.system_prompt,
-            {"role": "user", "content": user_content}
-        ]
 
     def _generate_chat_prompt(self, messages: List[dict]) -> str:
         """Generates chat prompt template"""
