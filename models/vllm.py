@@ -40,14 +40,16 @@ class MessageConstructor:
 
     def __init__(self, model_name: str, system_prompt: Optional[Dict[str, str]] = None):
         self.model_name = model_name
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        self.is_internvl = "internvl" in model_name.lower()
+        if not self.is_internvl:
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         self.system_prompt = system_prompt or self.DEFAULT_SYSTEM_PROMPT
 
     def construct(
             self,
             prompt: str,
             image: Optional[Image.Image] = None
-    ) -> Dict[str, Union[str, dict]]:
+    ) -> Dict[str, Union[str, dict, List[dict]]]:
         """
         Constructs model input message
         :param prompt: Text prompt
@@ -56,13 +58,15 @@ class MessageConstructor:
         """
         user_content = self._build_user_content(prompt, image)
         messages = self._format_messages(user_content)
-        chat_prompt = self._generate_chat_prompt(messages)
 
-        entry = {"prompt": chat_prompt}
-        if image:
-            entry["multi_modal_data"] = {"image": image}
-
-        return entry
+        if self.is_internvl:
+            return {"messages": messages}
+        else:
+            chat_prompt = self._generate_chat_prompt(messages)
+            entry = {"prompt": chat_prompt}
+            if image:
+                entry["multi_modal_data"] = {"image": image}
+            return entry
 
     def _build_user_content(
             self,
@@ -120,6 +124,7 @@ class VLLMInferenceModel(BaseInferenceModel):
         self.llm = llm
         self.sampling_params = sampling_params
         self.model_name = model_name
+        self.is_internvl = "internvl" in model_name.lower()
         self.message_constructor = MessageConstructor(model_name, system_prompt)
 
     def generate_responses(
@@ -138,14 +143,23 @@ class VLLMInferenceModel(BaseInferenceModel):
             print(f"First request: {requests[0]}")
 
             # Generate responses
-            outputs = self.llm.generate(
-                requests,
-                sampling_params=self.sampling_params
-            )
+            if self.is_internvl:
+                # For InternVL, use chat interface with messages
+                outputs = self.llm.chat(
+                    requests,
+                    sampling_params=self.sampling_params
+                )
+                return [output.outputs[0].text for output in outputs]
+            else:
+                # For other models, use generate interface with prompts
+                outputs = self.llm.generate(
+                    requests,
+                    sampling_params=self.sampling_params
+                )
+                return [output.outputs[0].text for output in outputs]
 
             print(f"First output: {outputs[0].outputs[0].text}")
 
-            return [output.outputs[0].text for output in outputs]
         except Exception as e:
             logger.error(f"Response generation failed: {str(e)}", exc_info=True)
             return [""] * len(prompts)
