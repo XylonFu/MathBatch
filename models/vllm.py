@@ -40,7 +40,7 @@ class MessageConstructor:
 
     def __init__(self, model_name: str, system_prompt: Optional[Dict[str, str]] = None):
         self.model_name = model_name
-        self.processor = AutoProcessor.from_pretrained(model_name)
+        self.processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
         self.system_prompt = system_prompt or self.DEFAULT_SYSTEM_PROMPT
 
     def construct(
