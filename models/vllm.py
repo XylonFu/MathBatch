@@ -5,7 +5,7 @@ from io import BytesIO
 from typing import List, Optional, Union, Dict
 
 from PIL import Image
-from transformers import AutoTokenizer
+from transformers import AutoProcessor
 
 from vllm import LLM, SamplingParams
 from .base import BaseInferenceModel
@@ -40,7 +40,7 @@ class MessageConstructor:
 
     def __init__(self, model_name: str, system_prompt: Optional[Dict[str, str]] = None):
         self.model_name = model_name
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.processor = AutoProcessor.from_pretrained(model_name)
         self.system_prompt = system_prompt or self.DEFAULT_SYSTEM_PROMPT
 
     def construct(
@@ -99,7 +99,7 @@ class MessageConstructor:
         if "qwen3" in self.model_name.lower():
             extra_args["enable_thinking"] = False
 
-        return self.tokenizer.apply_chat_template(
+        return self.processor.apply_chat_template(
             messages,
             tokenize=False,
             add_generation_prompt=True,
