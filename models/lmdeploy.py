@@ -54,13 +54,13 @@ class LMDeployInferenceModel(BaseInferenceModel):
 
     def __init__(
             self,
-            pipeline: pipeline,
-            generation_config: GenerationConfig,
+            pipe: pipeline,
+            gen_config: GenerationConfig,
             model_name: str,
             system_prompt: Optional[Dict[str, str]] = None
     ):
-        self.pipeline = pipeline
-        self.generation_config = generation_config
+        self.pipe = pipe
+        self.gen_config = gen_config
         self.model_name = model_name
         self.message_constructor = MessageConstructor(model_name, system_prompt)
 
@@ -77,7 +77,7 @@ class LMDeployInferenceModel(BaseInferenceModel):
 
             print(f"First request: {requests[0]}")
 
-            outputs = self.pipeline(requests, gen_config=self.generation_config)
+            outputs = self.pipe(requests, gen_config=self.gen_config)
 
             print(f"First output: {outputs[0]}")
 
