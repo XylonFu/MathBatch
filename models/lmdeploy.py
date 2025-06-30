@@ -79,9 +79,9 @@ class LMDeployInferenceModel(BaseInferenceModel):
 
             outputs = self.pipe(requests, gen_config=self.gen_config)
 
-            print(f"First output: {outputs[0]}")
+            print(f"First output: {outputs[0].text}")
 
-            return outputs
+            return [output.text for output in outputs]
         except Exception as e:
             logger.error(f"Response generation failed: {str(e)}", exc_info=True)
             return [""] * len(prompts)
