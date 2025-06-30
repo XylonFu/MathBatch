@@ -158,6 +158,7 @@ def main():
             chat_template_config=ChatTemplateConfig(model_name=args.model_name)
         )
         sampling_config = GenerationConfig(
+            do_sample=True,
             temperature=args.temperature,
             top_p=args.top_p,
             max_new_tokens=args.max_tokens,
