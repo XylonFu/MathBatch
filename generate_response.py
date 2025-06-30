@@ -241,6 +241,9 @@ def main():
     else:
         logger.info("Skipping text-only dataset")
 
+    if args.deploy_type == "lmdeploy":
+        llm_instance.close()
+
 
 if __name__ == "__main__":
     main()
