@@ -154,7 +154,7 @@ def main():
     if args.deploy_type == "lmdeploy":
         llm_instance = pipeline(
             model_path=args.model_path,
-            backend_config=TurbomindEngineConfig(session_len=args.max_model_len),
+            backend_config=TurbomindEngineConfig(session_len=args.max_model_len, tp=args.tensor_parallel_size),
             chat_template_config=ChatTemplateConfig(model_name=args.model_name)
         )
         sampling_config = GenerationConfig(
