@@ -92,6 +92,8 @@ def main():
                         help="Top-p sampling value")
     parser.add_argument("--max_tokens", type=int, default=1024,
                         help="Maximum tokens to generate")
+    parser.add_argument("--repetition_penalty", type=float, default=1.0,
+                        help="Prevent from generating repeated words")
     parser.add_argument("--deploy_type", type=str, default="vllm",
                         help="Model deployment toolkit")
 
@@ -158,7 +160,8 @@ def main():
         sampling_config = GenerationConfig(
             temperature=args.temperature,
             top_p=args.top_p,
-            max_new_tokens=args.max_tokens
+            max_new_tokens=args.max_tokens,
+            repetition_penalty=args.repetition_penalty
         )
         inference_model = LMDeployInferenceModel(
             pipe=llm_instance,
@@ -175,7 +178,8 @@ def main():
         sampling_config = SamplingParams(
             temperature=args.temperature,
             top_p=args.top_p,
-            max_tokens=args.max_tokens
+            max_tokens=args.max_tokens,
+            repetition_penalty=args.repetition_penalty
         )
         inference_model = VLLMInferenceModel(
             llm=llm_instance,
