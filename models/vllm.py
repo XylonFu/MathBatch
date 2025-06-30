@@ -46,7 +46,7 @@ class MessageConstructor:
     def construct(
             self,
             prompt: str,
-            image: Optional[Image.Image] = None
+            image: Optional[List[Image.Image]] = None
     ) -> Dict[str, Union[str, dict]]:
         """
         Constructs model input message
@@ -67,20 +67,20 @@ class MessageConstructor:
     def _build_user_content(
             self,
             prompt: str,
-            image: Optional[Image.Image]
+            image: Optional[List[Image.Image]]
     ) -> Union[str, list]:
         """Builds user content section"""
         if image:
-            processed_image = ImagePreprocessor.ensure_min_size(image)
-            img_str = ImagePreprocessor.encode_image(processed_image)
-
-            return [
-                {
+            content = []
+            for img in image:
+                processed_image = ImagePreprocessor.ensure_min_size(img)
+                img_str = ImagePreprocessor.encode_image(processed_image)
+                content.append({
                     "type": "image_url",
                     "image_url": {"url": f"data:image/png;base64,{img_str}"}
-                },
-                {"type": "text", "text": prompt}
-            ]
+                })
+            content.append({"type": "text", "text": prompt})
+            return content
         return prompt
 
     def _format_messages(
@@ -125,7 +125,7 @@ class VLLMInferenceModel(BaseInferenceModel):
     def generate_responses(
             self,
             prompts: List[str],
-            images: List[Optional[Image.Image]]
+            images: List[Optional[List[Image.Image]]]
     ) -> List[str]:
         """Processes batches of prompts and images"""
         try:

@@ -23,15 +23,25 @@ class MultimodalDataPreProcessor(BaseDataProcessor):
         """Processes a single multimodal item"""
         result = {"prompt": item.get(self.query_field, "")}
 
+        image_paths = item.get(self.image_field, [])
+        images = []
+
+        if isinstance(image_paths, str):
+            image_paths = [image_paths]
+
         # Process image if available
-        img_path = item.get(self.image_field, "")
-        if img_path and img_path.strip():
-            full_path = os.path.join(self.image_base_path, img_path)
-            if os.path.exists(full_path):
-                try:
-                    result["image"] = Image.open(full_path).convert("RGB")
-                except Exception as e:
-                    logger.error(f"Image loading error: {full_path} - {str(e)}")
+        for img_path in image_paths:
+            if img_path and img_path.strip():
+                full_path = os.path.join(self.image_base_path, img_path)
+                if os.path.exists(full_path):
+                    try:
+                        images.append(Image.open(full_path).convert("RGB"))
+                    except Exception as e:
+                        logger.error(f"Image loading error: {full_path} - {str(e)}")
+
+        if images:
+            result["images"] = images
+
         return result
 
     def process_batch(self, batch: List[Dict[str, Any]]) -> Dict[str, List]:
@@ -42,7 +52,7 @@ class MultimodalDataPreProcessor(BaseDataProcessor):
         for item in batch:
             processed = self.process_item(item)
             prompts.append(processed["prompt"])
-            images.append(processed.get("image"))
+            images.append(processed.get("images", []))
 
         return {"prompts": prompts, "images": images}
 
