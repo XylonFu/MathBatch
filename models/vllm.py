@@ -54,8 +54,8 @@ class MessageConstructor:
         :param image: PIL image object
         :return: Dictionary containing prompt and optional multi_modal_data
         """
-        user_content = self._build_user_content(prompt, image)
-        messages = self._format_messages(user_content)
+        # user_content = self._build_user_content(prompt, image)
+        messages = self._format_messages(prompt)
         chat_prompt = self._generate_chat_prompt(messages)
 
         entry = {"prompt": chat_prompt}
