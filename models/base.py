@@ -15,7 +15,7 @@ class BaseInferenceModel(ABC):
     def generate_responses(
             self,
             prompts: List[str],
-            images: List[Optional[Image.Image]]
+            images: List[Optional[List[Image.Image]]]
     ) -> List[str]:
         """Generates responses for batches of prompts and images"""
         pass
@@ -24,7 +24,7 @@ class BaseInferenceModel(ABC):
     def generate_single_response(
             self,
             prompt: str,
-            image: Optional[Image.Image] = None
+            image: Optional[List[Image.Image]] = None
     ) -> str:
         """Generates response for a single prompt"""
         pass

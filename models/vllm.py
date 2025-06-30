@@ -153,7 +153,7 @@ class VLLMInferenceModel(BaseInferenceModel):
     def generate_single_response(
             self,
             prompt: str,
-            image: Optional[Image.Image] = None
+            image: Optional[List[Image.Image]] = None
     ) -> str:
         """Processes a single prompt"""
         return self.generate_responses([prompt], [image])[0]
