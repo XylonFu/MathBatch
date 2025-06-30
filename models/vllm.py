@@ -49,7 +49,7 @@ class MessageConstructor:
             self,
             prompt: str,
             image: Optional[Image.Image] = None
-    ) -> Dict[str, Union[str, dict, List[dict]]]:
+    ) -> List[Dict] | Dict[str, Union[str, dict, List[dict]]]:
         """
         Constructs model input message
         :param prompt: Text prompt
