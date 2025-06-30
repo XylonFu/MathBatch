@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 
+from lmdeploy import pipeline, TurbomindEngineConfig, ChatTemplateConfig, GenerationConfig
 from vllm import LLM, SamplingParams
 
 from cores.batcher import DataBatcher
@@ -13,6 +14,7 @@ from cores.filter import DataFilter
 from cores.loader import DataLoader
 from cores.processor import MultimodalDataPreProcessor, TextOnlyDataPreProcessor
 from cores.saver import DataSaver
+from models.lmdeploy import LMDeployInferenceModel
 from models.vllm import VLLMInferenceModel
 
 # Configure logging
@@ -90,6 +92,8 @@ def main():
                         help="Top-p sampling value")
     parser.add_argument("--max_tokens", type=int, default=1024,
                         help="Maximum tokens to generate")
+    parser.add_argument("--deploy_type", type=str, default="vllm",
+                        help="Model deployment toolkit")
 
     # System prompt parameters
     parser.add_argument("--system_prompt_file", type=str, default=None,
@@ -145,22 +149,40 @@ def main():
 
     # Initialize model
     logger.info(f"Loading model from: {args.model_path}")
-    llm_instance = LLM(
-        model=args.model_path,
-        tensor_parallel_size=args.tensor_parallel_size,
-        max_model_len=args.max_model_len
-    )
-    sampling_config = SamplingParams(
-        temperature=args.temperature,
-        top_p=args.top_p,
-        max_tokens=args.max_tokens
-    )
-    inference_model = VLLMInferenceModel(
-        llm=llm_instance,
-        sampling_params=sampling_config,
-        model_name=args.model_name,
-        system_prompt=system_prompt
-    )
+    if args.deploy_type == "lmdeploy":
+        llm_instance = pipeline(
+            model_path=args.model_path,
+            backend_config=TurbomindEngineConfig(session_len=args.max_model_len),
+            chat_template_config=ChatTemplateConfig(model_name=args.model_name)
+        )
+        sampling_config = GenerationConfig(
+            temperature=args.temperature,
+            top_p=args.top_p,
+            max_new_tokens=args.max_tokens
+        )
+        inference_model = LMDeployInferenceModel(
+            pipe=llm_instance,
+            gen_config=sampling_config,
+            model_name=args.model_name,
+            system_prompt=system_prompt
+        )
+    else:
+        llm_instance = LLM(
+            model=args.model_path,
+            tensor_parallel_size=args.tensor_parallel_size,
+            max_model_len=args.max_model_len
+        )
+        sampling_config = SamplingParams(
+            temperature=args.temperature,
+            top_p=args.top_p,
+            max_tokens=args.max_tokens
+        )
+        inference_model = VLLMInferenceModel(
+            llm=llm_instance,
+            sampling_params=sampling_config,
+            model_name=args.model_name,
+            system_prompt=system_prompt
+        )
 
     # Create shared components
     data_loader = DataLoader(args.index_field, args.response_field)
