@@ -102,7 +102,6 @@ def generate_report(results: List[Dict[str, Any]], dataset_type: str) -> Dict[st
     # 准备输出数据结构
     output_stats: Dict[str, Any] = {
         "by_subject_subfield": {},
-        "by_subject_total": {},
         "by_version": {},
         "overall": {}
     }
@@ -167,13 +166,6 @@ def generate_report(results: List[Dict[str, Any]], dataset_type: str) -> Dict[st
 
     # 填充输出结构
     output_stats["by_subject_subfield"] = subject_stats
-
-    # 单独提取学科总计信息
-    by_subject_total: Dict[str, StatsDict] = {}
-    for subject, data in subject_stats.items():
-        by_subject_total[subject] = data["total"]
-    output_stats["by_subject_total"] = by_subject_total
-
     output_stats["by_version"] = version_stats
     output_stats["overall"] = overall_stats
 
