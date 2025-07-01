@@ -1,4 +1,3 @@
-# plugins/mathverse/extract_score_answer.py
 import sys
 from pathlib import Path
 
