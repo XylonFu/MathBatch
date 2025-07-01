@@ -21,7 +21,7 @@ from plugins.mathverse.processor import (
     ScoreAnswerPreProcessor,
     CleanJudgeTagPostProcessor
 )
-from plugins.mathverse.prompts import demo_prompt_extract, demo_prompt_score
+from plugins.evaluation.prompts import demo_prompt_extract, demo_prompt_score
 
 # Configure logging
 logging.basicConfig(
