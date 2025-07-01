@@ -15,7 +15,7 @@ from cores.filter import DataFilter
 from cores.loader import DataLoader
 from cores.saver import DataSaver
 from models.vllm import VLLMInferenceModel
-from plugins.mathverse.processor import (
+from plugins.evaluation.processor import (
     CleanExtractTagPostProcessor,
     ExtractionAnswerPreProcessor,
     ScoreAnswerPreProcessor,
