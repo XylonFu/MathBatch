@@ -1,4 +1,4 @@
-# generate_response.py
+# generate_response_offline.py
 import argparse
 import importlib.util
 import logging

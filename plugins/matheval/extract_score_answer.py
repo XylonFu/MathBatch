@@ -15,13 +15,13 @@ from cores.filter import DataFilter
 from cores.loader import DataLoader
 from cores.saver import DataSaver
 from models.vllm import VLLMInferenceModel
-from plugins.evaluation.processor import (
+from plugins.matheval.processor import (
     CleanExtractTagPostProcessor,
     ExtractionAnswerPreProcessor,
     ScoreAnswerPreProcessor,
     CleanJudgeTagPostProcessor
 )
-from plugins.evaluation.prompts import demo_prompt_extract, demo_prompt_score
+from plugins.matheval.prompts import demo_prompt_extract, demo_prompt_score
 
 # Configure logging
 logging.basicConfig(
