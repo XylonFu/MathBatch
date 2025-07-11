@@ -10,7 +10,7 @@ from openai import AsyncOpenAI
 from tqdm import tqdm
 
 
-def build_messages(item, args):
+async def build_messages(item, args):
     content_list = []
 
     if args.query_field in item and item[args.query_field]:
@@ -35,8 +35,8 @@ def build_messages(item, args):
             full_path = os.path.join(args.image_base_path, img_path) if args.image_base_path else img_path
 
             try:
-                with open(full_path, "rb") as image_file:
-                    image_data = image_file.read()
+                async with aiofiles.open(full_path, "rb") as image_file:
+                    image_data = await image_file.read()
 
                 mime_type, _ = mimetypes.guess_type(full_path)
                 if not mime_type:
@@ -88,7 +88,7 @@ async def get_openai_response(item, semaphore, args):
             timeout=args.api_timeout
         )
 
-        messages = build_messages(item, args)
+        messages = await build_messages(item, args)
         if not messages:
             return None
 
@@ -111,10 +111,9 @@ async def process_item(item, semaphore, queue, args):
 async def write_results(output_file, queue, total, write_batch_size):
     async with aiofiles.open(output_file, "a", encoding="utf-8") as f:
         batch = []
+        processed = 0
 
         with tqdm(total=total, desc="Processing", unit="item", mininterval=0.5) as progress:
-            processed = 0
-
             while processed < total:
                 item = await queue.get()
                 batch.append(item)
@@ -154,9 +153,9 @@ async def load_pending_items(input_file, processed_ids, args):
                 item = json.loads(line)
                 item_id = str(item.get(args.index_field, ''))
 
-                has_content = (
-                        (args.query_field in item and item[args.query_field]) or
-                        (args.image_field and args.image_field in item and item[args.image_field])
+                has_content = bool(
+                    (args.query_field in item and item[args.query_field]) or
+                    (args.image_field and args.image_field in item and item[args.image_field])
                 )
 
                 if item_id in processed_ids:
@@ -173,8 +172,8 @@ async def load_pending_items(input_file, processed_ids, args):
 
 
 async def execute_processing_tasks(items, semaphore, queue, args):
-    processing_tasks = [asyncio.create_task(process_item(item, semaphore, queue, args)) for item in items]
-    await asyncio.gather(*processing_tasks)
+    tasks = [asyncio.create_task(process_item(item, semaphore, queue, args)) for item in items]
+    await asyncio.gather(*tasks)
 
 
 async def process_jsonl_file(args):
@@ -229,7 +228,7 @@ def parse_args():
 async def main():
     args = parse_args()
     await process_jsonl_file(args)
-    print("Done!")
+    print("Processing completed successfully!")
 
 
 if __name__ == "__main__":
