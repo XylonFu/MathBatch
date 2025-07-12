@@ -5,6 +5,7 @@ import json
 import logging
 import mimetypes
 import os
+import sys
 
 import aiofiles
 from openai import AsyncOpenAI
@@ -13,7 +14,8 @@ from tqdm import tqdm
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    datefmt='%Y-%m-%d %H:%M:%S',
+    stream=sys.stdout
 )
 logger = logging.getLogger(__name__)
 
@@ -123,7 +125,7 @@ async def write_results(output_file, queue, total, write_batch_size):
         batch = []
         processed = 0
 
-        with tqdm(total=total, desc="Processing", unit="item", mininterval=0.5) as progress:
+        with tqdm(total=total, desc="Processing", unit="item", mininterval=0.5, file=sys.stderr) as progress:
             while processed < total:
                 item = await queue.get()
                 batch.append(item)
