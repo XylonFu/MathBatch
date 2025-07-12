@@ -80,14 +80,8 @@ async def request_openai_response(messages, client, args):
                 raise
 
 
-async def get_openai_response(item, semaphore, args):
+async def get_openai_response(item, semaphore, client, args):
     async with semaphore:
-        client = AsyncOpenAI(
-            api_key=args.api_key,
-            base_url=args.base_url,
-            timeout=args.api_timeout
-        )
-
         messages = await build_messages(item, args)
         if not messages:
             return None
@@ -95,9 +89,9 @@ async def get_openai_response(item, semaphore, args):
         return await request_openai_response(messages, client, args)
 
 
-async def process_item(item, semaphore, queue, args):
+async def process_item(item, semaphore, client, queue, args):
     try:
-        response = await get_openai_response(item, semaphore, args)
+        response = await get_openai_response(item, semaphore, client, args)
         if response is not None:
             item[args.response_field] = response
         else:
@@ -171,14 +165,20 @@ async def load_pending_items(input_file, processed_ids, args):
     return items
 
 
-async def execute_processing_tasks(items, semaphore, queue, args):
-    tasks = [asyncio.create_task(process_item(item, semaphore, queue, args)) for item in items]
+async def execute_processing_tasks(items, semaphore, client, queue, args):
+    tasks = [asyncio.create_task(process_item(item, semaphore, client, queue, args)) for item in items]
     await asyncio.gather(*tasks)
 
 
 async def process_jsonl_file(args):
     concurrent_semaphore = asyncio.Semaphore(args.concurrent_batch_size)
     queue = asyncio.Queue()
+
+    client = AsyncOpenAI(
+        api_key=args.api_key,
+        base_url=args.base_url,
+        timeout=args.api_timeout
+    )
 
     processed_ids = await load_processed_ids(args.output_file, args.index_field, args.response_field)
     items = await load_pending_items(args.input_file, processed_ids, args)
@@ -189,9 +189,11 @@ async def process_jsonl_file(args):
     print(f"Processing {len(items)} items...")
 
     write_task = asyncio.create_task(write_results(args.output_file, queue, len(items), args.write_batch_size))
-    await execute_processing_tasks(items, concurrent_semaphore, queue, args)
+    await execute_processing_tasks(items, concurrent_semaphore, client, queue, args)
     await queue.join()
     await write_task
+
+    await client.close()
 
 
 def parse_args():
@@ -203,7 +205,7 @@ def parse_args():
 
     parser.add_argument('--concurrent_batch_size', type=int, default=100)
     parser.add_argument('--write_batch_size', type=int, default=100)
-    parser.add_argument('--api_timeout', type=int, default=120)
+    parser.add_argument('--api_timeout', type=int, default=600)
     parser.add_argument('--max_retries', type=int, default=3)
     parser.add_argument('--retry_delay', type=int, default=2)
 
