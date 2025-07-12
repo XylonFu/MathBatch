@@ -224,6 +224,7 @@ async def process_jsonl_file(args):
         logger.info("No items to process")
         return
 
+    logger.info(f"Skipping {len(processed_ids)} items")
     logger.info(f"Processing {len(items)} items")
 
     write_task = asyncio.create_task(write_results(args.output_file, queue, len(items), args.write_batch_size))
