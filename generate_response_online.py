@@ -5,6 +5,7 @@ import json
 import logging
 import mimetypes
 import os
+import re
 import sys
 
 import aiofiles
@@ -153,8 +154,18 @@ async def load_processed_ids(output_file, index_field, response_field):
                 async for line in f:
                     try:
                         data = json.loads(line)
-                        if data.get(index_field) and data.get(response_field):
-                            processed_ids.add(str(data[index_field]))
+                        index_value = data.get(index_field)
+
+                        if index_value and data.get(response_field):
+                            processed_ids.add(str(index_value))
+                            continue
+
+                        error_value = data.get("error")
+                        if index_value and error_value:
+                            if re.search(r'Error code: 400\b', error_value):
+                                processed_ids.add(str(index_value))
+                                logger.info(f"Skipping item {index_value} due to 400 error")
+
                     except json.JSONDecodeError as e:
                         logger.error(f"JSON decode error: {str(e)}")
         except Exception as e:
