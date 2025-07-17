@@ -1,3 +1,5 @@
+# generate_response_online.py
+import aiofiles
 import argparse
 import asyncio
 import base64
@@ -7,8 +9,6 @@ import mimetypes
 import os
 import re
 import sys
-
-import aiofiles
 from openai import AsyncOpenAI
 from tqdm import tqdm
 
@@ -127,9 +127,15 @@ async def write_results(output_file, queue, total, write_batch_size):
         processed = 0
 
         with tqdm(total=total, desc="Processing", unit="item", mininterval=0.5, file=sys.stderr) as progress:
-            while processed < total:
+            while True:
                 item = await queue.get()
+
+                if item is None:
+                    queue.task_done()
+                    break
+
                 batch.append(item)
+                queue.task_done()
 
                 if len(batch) >= write_batch_size:
                     await f.write("\n".join(json.dumps(i, ensure_ascii=False) for i in batch) + "\n")
@@ -138,12 +144,11 @@ async def write_results(output_file, queue, total, write_batch_size):
                     processed += len(batch)
                     batch = []
 
-                queue.task_done()
-
             if batch:
                 await f.write("\n".join(json.dumps(i, ensure_ascii=False) for i in batch) + "\n")
                 await f.flush()
                 progress.update(len(batch))
+                processed += len(batch)
 
 
 async def load_processed_ids(output_file, index_field, response_field):
@@ -229,9 +234,9 @@ async def process_jsonl_file(args):
 
     write_task = asyncio.create_task(write_results(args.output_file, queue, len(items), args.write_batch_size))
     await execute_processing_tasks(items, concurrent_semaphore, client, queue, args)
+    await queue.put(None)
     await queue.join()
     await write_task
-
     await client.close()
 
 
