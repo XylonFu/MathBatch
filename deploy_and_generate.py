@@ -62,33 +62,27 @@ async def deploy_and_generate(args: argparse.Namespace) -> None:
         wait_server(host=args.host, port=args.port, timeout=600)
         logger.info("Server is ready!")
 
-        arg_dict: Dict[str, Any] = {
-            "api_key": args.api_key,
-            "base_url": f"http://{args.host}:{args.port}/v1",
-            "model": args.served_model_name,
-            "input_file": args.input_file,
-            "output_file": args.output_file,
-            "query_field": args.query_field,
-            "response_field": args.response_field,
-            "index_field": args.index_field,
-            "concurrent_batch_size": args.concurrent_batch_size,
-            "write_batch_size": args.write_batch_size,
-            "api_timeout": args.api_timeout,
-            "max_retries": args.max_retries,
-            "retry_delay": args.retry_delay,
-            "temperature": args.temperature,
-            "top_p": args.top_p,
-            "max_tokens": args.max_tokens,
-        }
-
-        if args.instructions:
-            arg_dict["instructions"] = args.instructions
-        if args.image_field:
-            arg_dict["image_field"] = args.image_field
-        if args.image_base_path:
-            arg_dict["image_base_path"] = args.image_base_path
-
-        generate_args = parse_generate_args(arg_dict)
+        generate_args = argparse.Namespace(
+            api_key=args.api_key,
+            base_url=f"http://{args.host}:{args.port}/v1",
+            model=args.served_model_name,
+            input_file=args.input_file,
+            output_file=args.output_file,
+            query_field=args.query_field,
+            response_field=args.response_field,
+            index_field=args.index_field,
+            concurrent_batch_size=args.concurrent_batch_size,
+            write_batch_size=args.write_batch_size,
+            api_timeout=args.api_timeout,
+            max_retries=args.max_retries,
+            retry_delay=args.retry_delay,
+            temperature=args.temperature,
+            top_p=args.top_p,
+            max_tokens=args.max_tokens,
+            instructions=args.instructions,
+            image_field=args.image_field,
+            image_base_path=args.image_base_path
+        )
 
         logger.info(f"Starting generation process for {len(args.devices)} GPU(s)")
         await generate_responses_main(generate_args)
