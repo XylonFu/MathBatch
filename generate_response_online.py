@@ -1,5 +1,4 @@
 # generate_response_online.py
-import aiofiles
 import argparse
 import asyncio
 import base64
@@ -9,6 +8,8 @@ import mimetypes
 import os
 import re
 import sys
+
+import aiofiles
 from openai import AsyncOpenAI
 from tqdm import tqdm
 
@@ -240,7 +241,7 @@ async def process_jsonl_file(args):
     await client.close()
 
 
-def parse_args():
+def parse_args(args=None):
     parser = argparse.ArgumentParser()
 
     api_group = parser.add_argument_group('API Configuration')
@@ -274,11 +275,23 @@ def parse_args():
     image_group.add_argument('--image_field', type=str, default=None)
     image_group.add_argument('--image_base_path', type=str, default=None)
 
-    return parser.parse_args()
+    if args is None:
+        return parser.parse_args()
+    elif isinstance(args, dict):
+        arg_list = []
+        for key, value in args.items():
+            if value is not None:
+                arg_list.append(f"--{key.replace('_', '-')}")
+                if not isinstance(value, bool):
+                    arg_list.append(str(value))
+        return parser.parse_args(arg_list)
+    else:
+        raise ValueError("args parameter must be None or a dictionary")
 
 
-async def main():
-    args = parse_args()
+async def main(args=None):
+    if args is None:
+        args = parse_args()
     await process_jsonl_file(args)
     logger.info("Processing completed successfully")
 
